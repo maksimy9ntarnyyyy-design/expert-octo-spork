@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Трекер дня</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+
+  :root{
+    --bg: #0a0b0d;
+    --panel: rgba(255,255,255,0.045);
+    --panel-solid: #16181c;
+    --panel-line: rgba(255,255,255,0.09);
+    --text: #f4f3f0;
+    --text-dim: #9a9da5;
+    --text-dim2: #6f7278;
+    --rec: #ff6a3d;
+    --rec2: #ff3d77;
+    --teal: #2ee6d0;
+    --amber: #ffc65c;
+    --done: #2ee6d0;
+    --violet: #8b7bff;
+  }
+  *{box-sizing:border-box;}
+  html{background:var(--bg);}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    -webkit-font-smoothing:antialiased;
+    padding-bottom:50px;
+    position:relative;
+    overflow-x:hidden;
+  }
+  body::before{
+    content:'';
+    position:fixed;
+    inset:0;
+    z-index:0;
+    pointer-events:none;
+    background:
+      radial-gradient(700px 500px at 12% -8%, rgba(255,106,61,0.22), transparent 60%),
+      radial-gradient(600px 500px at 100% 8%, rgba(46,230,208,0.14), transparent 55%),
+      radial-gradient(650px 550px at 30% 105%, rgba(139,123,255,0.14), transparent 55%),
+      radial-gradient(500px 400px at 90% 90%, rgba(255,198,92,0.10), transparent 55%);
+    animation: driftGlow 22s ease-in-out infinite alternate;
+  }
+  @keyframes driftGlow{
+    0%{ transform:translate3d(0,0,0) scale(1); }
+    100%{ transform:translate3d(-2%,1.5%,0) scale(1.04); }
+  }
+  .wrap{max-width:480px;margin:0 auto;padding:20px 16px 0;position:relative;z-index:1;}
+
+  @keyframes fadeUp{
+    from{opacity:0; transform:translateY(10px);}
+    to{opacity:1; transform:translateY(0);}
+  }
+  .section{animation:fadeUp .5s ease both;}
+  .section:nth-of-type(1){animation-delay:.02s;}
+  .section:nth-of-type(2){animation-delay:.06s;}
+  .section:nth-of-type(3){animation-delay:.10s;}
+  .section:nth-of-type(4){animation-delay:.14s;}
+  .section:nth-of-type(5){animation-delay:.18s;}
+  .section:nth-of-type(6){animation-delay:.22s;}
+  .section:nth-of-type(7){animation-delay:.26s;}
+
+  /* Header */
+  .head{
+    display:flex;
+    align-items:center;
+    gap:18px;
+    padding:20px;
+    border-radius:24px;
+    background:linear-gradient(160deg, rgba(255,255,255,0.07), rgba(255,255,255,0.02));
+    border:1px solid var(--panel-line);
+    backdrop-filter:blur(24px);
+    -webkit-backdrop-filter:blur(24px);
+    box-shadow:0 20px 45px -20px rgba(0,0,0,0.6);
+    animation:fadeUp .5s ease both;
+  }
+  .ring-box{position:relative;width:76px;height:76px;flex:none;}
+  .ring-box svg{transform:rotate(-90deg);overflow:visible;}
+  .ring-bg{fill:none;stroke:rgba(255,255,255,0.08);stroke-width:6;}
+  .ring-fg{fill:none;stroke:url(#ringGrad);stroke-width:6;stroke-linecap:round;transition:stroke-dashoffset .5s cubic-bezier(.4,0,.2,1);filter:drop-shadow(0 0 6px rgba(255,106,61,0.45));}
+  .ring-pct{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px;
+    letter-spacing:-0.02em;
+  }
+  .head-info{flex:1;min-width:0;}
+  .head-date{
+    font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:20px;
+    text-transform:capitalize;
+    letter-spacing:-0.01em;
+    background:linear-gradient(90deg, #ffffff, #c9cbd1);
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+  }
+  .head-sub{font-size:13px;color:var(--text-dim);margin-top:4px;}
+  .streak{
+    display:flex;align-items:center;gap:6px;margin-top:9px;
+    background:linear-gradient(90deg, rgba(255,198,92,0.16), rgba(255,198,92,0.02));
+    border:1px solid rgba(255,198,92,0.25);
+    border-radius:20px;
+    padding:4px 10px 4px 8px;
+    width:fit-content;
+  }
+  .streak b{font-family:'Space Grotesk',sans-serif;color:var(--amber);font-size:14px;}
+  .streak span{font-size:11.5px;color:var(--text-dim);}
+  .flame{font-size:14px;line-height:1;filter:drop-shadow(0 0 4px rgba(255,198,92,0.6));}
+
+  .streak.risk{
+    background:linear-gradient(90deg, rgba(255,106,61,0.18), rgba(255,106,61,0.03));
+    border-color:rgba(255,106,61,0.35);
+    animation:riskPulse 1.4s ease-in-out infinite;
+  }
+  .streak.risk b, .streak.risk span{color:var(--rec);}
+  .streak.risk .flame{animation:flicker 1.1s ease-in-out infinite;}
+  @keyframes riskPulse{
+    0%,100%{box-shadow:0 0 0 rgba(255,106,61,0);}
+    50%{box-shadow:0 0 14px rgba(255,106,61,0.35);}
+  }
+  @keyframes flicker{
+    0%,100%{transform:scale(1) rotate(-2deg);}
+    50%{transform:scale(1.12) rotate(2deg);}
+  }
+
+  .streak.out{
+    background:rgba(255,255,255,0.04);
+    border-color:var(--panel-line);
+  }
+  .streak.out b, .streak.out span{color:var(--text-dim2);}
+  .streak.out .flame{filter:grayscale(1) opacity(0.5);}
+
+  /* Section */
+  .section{margin-top:22px;}
+  .section-title{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:600;
+    font-size:12.5px;
+    color:var(--text-dim);
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    display:flex;
+    align-items:center;
+    gap:9px;
+    margin-bottom:11px;
+    padding-left:2px;
+  }
+  .section-title .tag{
+    width:14px;height:3px;border-radius:3px;
+    background:linear-gradient(90deg, var(--rec), var(--rec2));
+    flex:none;
+  }
+  .section.teal .tag{background:linear-gradient(90deg, var(--teal), #1fa6ff);}
+  .section.amber .tag{background:linear-gradient(90deg, var(--amber), var(--rec));}
+
+  .list-card{
+    background:linear-gradient(160deg, rgba(255,255,255,0.055), rgba(255,255,255,0.015));
+    border:1px solid var(--panel-line);
+    border-radius:20px;
+    backdrop-filter:blur(18px);
+    -webkit-backdrop-filter:blur(18px);
+    overflow:hidden;
+    box-shadow:0 16px 34px -22px rgba(0,0,0,0.7);
+  }
+
+  .item{
+    display:flex;
+    align-items:flex-start;
+    gap:13px;
+    padding:14px 16px;
+    border-bottom:1px solid var(--panel-line);
+    cursor:pointer;
+    user-select:none;
+    transition:background .15s ease;
+  }
+  .item:active{background:rgba(255,255,255,0.04);}
+  .item:last-child{border-bottom:none;}
+  .box{
+    width:22px;height:22px;border-radius:8px;
+    border:1.5px solid rgba(255,255,255,0.22);
+    flex:none;margin-top:1px;
+    display:flex;align-items:center;justify-content:center;
+    transition:background .2s ease, border-color .2s ease, transform .2s cubic-bezier(.4,0,.2,1);
+  }
+  .box svg{width:13px;height:13px;opacity:0;transform:scale(.5);transition:opacity .15s ease, transform .25s cubic-bezier(.34,1.56,.64,1);}
+  .item.checked .box{
+    background:linear-gradient(135deg, var(--teal), #1fa6ff);
+    border-color:transparent;
+    transform:scale(1.04);
+    box-shadow:0 0 12px rgba(46,230,208,0.4);
+  }
+  .item.checked .box svg{opacity:1;transform:scale(1);}
+  .item-text{font-size:14.5px;line-height:1.4;color:var(--text);}
+  .item.checked .item-text{color:var(--text-dim2);text-decoration:line-through;text-decoration-color:rgba(255,255,255,0.25);}
+  .item-sub{font-size:12px;color:var(--text-dim2);margin-top:3px;line-height:1.4;}
+
+  /* Stats */
+  .stat-row{
+    background:linear-gradient(160deg, rgba(255,255,255,0.055), rgba(255,255,255,0.015));
+    border:1px solid var(--panel-line);
+    border-radius:18px;
+    padding:16px;
+    margin-bottom:12px;
+    backdrop-filter:blur(18px);
+    -webkit-backdrop-filter:blur(18px);
+    box-shadow:0 16px 34px -24px rgba(0,0,0,0.7);
+  }
+  .stat-top{
+    display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;
+  }
+  .stat-label{font-size:13.5px;color:var(--text);font-weight:600;}
+  .stat-goal{font-size:11.5px;color:var(--text-dim2);font-weight:500;}
+  .stat-input-row{display:flex;align-items:center;gap:10px;}
+  .stat-input-row input{
+    flex:1;
+    background:rgba(0,0,0,0.28);
+    border:1px solid var(--panel-line);
+    border-radius:10px;
+    color:var(--text);
+    font-family:'Space Grotesk',sans-serif;
+    font-size:17px;
+    font-weight:600;
+    padding:10px 12px;
+    width:100%;
+    transition:border-color .15s ease;
+  }
+  .stat-input-row input:focus{outline:none;border-color:rgba(46,230,208,0.5);}
+  .bar-bg{height:7px;border-radius:5px;background:rgba(255,255,255,0.08);margin-top:11px;overflow:hidden;}
+  .bar-fg{height:100%;border-radius:5px;transition:width .4s cubic-bezier(.4,0,.2,1);}
+
+  .save-btn{
+    width:100%;
+    margin-top:4px;
+    background:linear-gradient(90deg, var(--rec), var(--rec2));
+    color:#0a0b0d;
+    border:none;
+    border-radius:14px;
+    padding:15px;
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:14.5px;
+    cursor:pointer;
+    box-shadow:0 12px 28px -10px rgba(255,106,61,0.5);
+    transition:transform .15s ease, box-shadow .15s ease;
+  }
+  .save-btn:active{transform:scale(.98);box-shadow:0 6px 16px -8px rgba(255,106,61,0.5);}
+
+  .toast{
+    position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(10px);
+    background:rgba(22,24,28,0.92);
+    border:1px solid var(--panel-line);
+    color:var(--text);padding:11px 20px;border-radius:24px;
+    font-size:13px;font-weight:500;opacity:0;pointer-events:none;
+    transition:opacity .25s ease, transform .25s ease;
+    backdrop-filter:blur(12px);
+    box-shadow:0 12px 30px -10px rgba(0,0,0,0.6);
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  .footnote{
+    text-align:center;font-size:11.5px;color:var(--text-dim2);margin-top:30px;padding:0 24px;
+    line-height:1.6;
+  }
+  .storage-warning{
+    background:linear-gradient(160deg, rgba(255,198,92,0.14), rgba(255,198,92,0.03));
+    border:1px solid rgba(255,198,92,0.3);
+    color:var(--amber);
+    font-size:12.5px;
+    line-height:1.5;
+    border-radius:16px;
+    padding:13px 15px;
+    margin:0 0 18px;
+    backdrop-filter:blur(12px);
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="storage-warning" id="storageWarning" style="display:none;">
+    Открой этот трекер через своего бота в Telegram — тогда прогресс будет сохраняться на твоём аккаунте. Сейчас это предпросмотр вне Telegram, данные не запомнятся.
+  </div>
+
+  <div class="head">
+    <div class="ring-box">
+      <svg viewBox="0 0 72 72" width="72" height="72">
+        <defs>
+          <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#ff6a3d"/>
+            <stop offset="100%" stop-color="#ff3d77"/>
+          </linearGradient>
+        </defs>
+        <circle class="ring-bg" cx="36" cy="36" r="30"></circle>
+        <circle id="ringFg" class="ring-fg" cx="36" cy="36" r="30" stroke-dasharray="188.5" stroke-dashoffset="188.5"></circle>
+      </svg>
+      <div class="ring-pct" id="ringPct">0%</div>
+    </div>
+    <div class="head-info">
+      <div class="head-date" id="headDate">—</div>
+      <div class="head-sub" id="headSub">Загрузка…</div>
+      <div class="streak" id="streakBadge">
+        <span class="flame" id="flameIcon">🔥</span>
+        <b id="streakNum">0</b><span id="streakLabel">дней подряд</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="tag"></span>Утро — тело и голова</div>
+    <div id="grpMorning" class="list-card"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="tag"></span>Контент</div>
+    <div id="grpContent" class="list-card"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="tag"></span>Продюсирование</div>
+    <div id="grpProd" class="list-card"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="tag"></span>ТГК и инфопродукт</div>
+    <div id="grpProduct" class="list-card"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="tag"></span>Аутрич и медийка</div>
+    <div id="grpOutreach" class="list-card"></div>
+  </div>
+
+  <div class="section amber">
+    <div class="section-title"><span class="tag"></span>Написать бизнесам в Энкарнасьоне</div>
+    <div id="grpBiz" class="list-card"></div>
+  </div>
+
+  <div class="section teal">
+    <div class="section-title"><span class="tag"></span>Цифры к полугодовой цели</div>
+
+    <div class="stat-row">
+      <div class="stat-top">
+        <div class="stat-label">Подписчики в Telegram</div>
+        <div class="stat-goal">цель 3000</div>
+      </div>
+      <div class="stat-input-row">
+        <input type="number" id="inTg" placeholder="0" inputmode="numeric">
+      </div>
+      <div class="bar-bg"><div class="bar-fg" id="barTg" style="width:0%;background:var(--teal);"></div></div>
+    </div>
+
+    <div class="stat-row">
+      <div class="stat-top">
+        <div class="stat-label">Подписчики в TikTok</div>
+        <div class="stat-goal">цель 5000</div>
+      </div>
+      <div class="stat-input-row">
+        <input type="number" id="inTt" placeholder="0" inputmode="numeric">
+      </div>
+      <div class="bar-bg"><div class="bar-fg" id="barTt" style="width:0%;background:var(--teal);"></div></div>
+    </div>
+
+    <div class="stat-row">
+      <div class="stat-top">
+        <div class="stat-label">Заработано (с начала пути)</div>
+        <div class="stat-goal">цель 150 000 ₽</div>
+      </div>
+      <div class="stat-input-row">
+        <input type="number" id="inMoney" placeholder="0" inputmode="numeric">
+      </div>
+      <div class="bar-bg"><div class="bar-fg" id="barMoney" style="width:0%;background:var(--amber);"></div></div>
+    </div>
+
+    <button class="save-btn" id="saveStats">Сохранить цифры</button>
+  </div>
+
+  <div class="footnote">Данные привязаны к твоему Telegram-аккаунту через Cloud Storage.<br>Открывай трекер каждый день с утра и вечером.</div>
+</div>
+
+<div class="toast" id="toast">Сохранено</div>
+
+<script>
+const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+const inTelegram = !!(tg && tg.initData !== undefined && tg.platform !== 'unknown');
+
+if(tg){
+  tg.ready();
+  tg.expand();
+  if(tg.themeParams){
+    const tp = tg.themeParams;
+    if(tp.bg_color) document.documentElement.style.setProperty('--bg', tp.bg_color);
+  }
+}
+
+const ICON_CHECK = '<svg viewBox="0 0 24 24" fill="none"><path d="M4 12l5 5L20 6" stroke="#0a0b0d" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+const ITEMS = {
+  grpMorning: [
+    {id:'esp', text:'Испанский — 15–20 минут (Duolingo / карточки / аудио)'},
+    {id:'neck', text:'Разминка шеи и спины', sub:'3–5 минут, до основной активности'},
+    {id:'pushups', text:'Отжимания', sub:'столько подходов, сколько сегодня по силам'},
+    {id:'wallstand', text:'Стойка у стены', sub:'таймер, постепенно увеличивать время'},
+  ],
+  grpContent: [
+    {id:'video', text:'Снять и/или смонтировать 1 видео для TikTok / Reels'},
+    {id:'publish', text:'Опубликовать видео в оптимальное время'},
+  ],
+  grpProd: [
+    {id:'proj1', text:'Проект №1 — конкретное действие сегодня', sub:'звонок, монтаж, стратегия — что угодно, но не «подумать»'},
+    {id:'proj2', text:'Проект №2 — конкретное действие сегодня'},
+  ],
+  grpProduct: [
+    {id:'tgpost', text:'Пост в телеграм-канал'},
+    {id:'product', text:'20–30 минут над инфопродуктом', sub:'структура, лендинг, сценарий, оффер — по кусочку'},
+  ],
+  grpOutreach: [
+    {id:'comments', text:'Ответить на комментарии и в директ'},
+    {id:'outreach', text:'5–10 касаний: клиенты, партнёры, комменты у блогеров в нише'},
+  ],
+  grpBiz: [
+    {id:'mailout1', text:'Написать бизнесу №1', sub:'короткий конкретный оффер на продюсирование/контент'},
+    {id:'mailout2', text:'Написать бизнесу №2'},
+    {id:'mailout3', text:'Написать бизнесу №3'},
+  ],
+};
+
+const GOALS = { tg: 3000, tt: 5000, money: 150000 };
+
+function pad(n){return n.toString().padStart(2,'0');}
+function dateKeyFromDate(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+function todayKey(){ return dateKeyFromDate(new Date()); }
+function dateKeyOffset(days){ const d = new Date(); d.setDate(d.getDate()+days); return dateKeyFromDate(d); }
+function allItemIds(){ return Object.values(ITEMS).flat().map(i=>i.id); }
+function totalCount(){ return allItemIds().length; }
+
+const TODAY = todayKey();
+let storageBroken = !inTelegram;
+
+// единый объект состояния: { days: { 'YYYY-MM-DD': {itemId:true} }, totals: {tg,tt,money} }
+let appState = { days: {}, totals: { tg:0, tt:0, money:0 } };
+let dayState = {};
+
+function flagStorageBroken(){
+  const w = document.getElementById('storageWarning');
+  if(w) w.style.display = 'block';
+  storageBroken = true;
+}
+
+function cloudGet(key){
+  return new Promise(resolve=>{
+    if(!tg || !tg.CloudStorage){ resolve(null); return; }
+    try{
+      tg.CloudStorage.getItem(key, (err, value)=>{
+        if(err || !value) resolve(null);
+        else resolve(value);
+      });
+    }catch(e){ resolve(null); }
+  });
+}
+function cloudSet(key, value){
+  return new Promise(resolve=>{
+    if(!tg || !tg.CloudStorage){ resolve(false); return; }
+    try{
+      tg.CloudStorage.setItem(key, value, (err, ok)=>{ resolve(!!ok && !err); });
+    }catch(e){ resolve(false); }
+  });
+}
+
+async function loadAppState(){
+  if(!inTelegram) return { days: {}, totals: { tg:0, tt:0, money:0 } };
+  const raw = await cloudGet('day_tracker_state');
+  if(!raw) return { days: {}, totals: { tg:0, tt:0, money:0 } };
+  try{
+    const parsed = JSON.parse(raw);
+    return { days: parsed.days || {}, totals: parsed.totals || {tg:0,tt:0,money:0} };
+  }catch(e){ return { days: {}, totals: { tg:0, tt:0, money:0 } }; }
+}
+async function saveAppState(){
+  if(!inTelegram) return;
+  await cloudSet('day_tracker_state', JSON.stringify(appState));
+}
+
+function renderGroup(groupId){
+  const container = document.getElementById(groupId);
+  container.innerHTML = '';
+  ITEMS[groupId].forEach(item=>{
+    const checked = !!dayState[item.id];
+    const el = document.createElement('div');
+    el.className = 'item' + (checked ? ' checked' : '');
+    el.innerHTML = `
+      <div class="box">${ICON_CHECK}</div>
+      <div>
+        <div class="item-text">${item.text}</div>
+        ${item.sub ? `<div class="item-sub">${item.sub}</div>` : ''}
+      </div>
+    `;
+    el.addEventListener('click', async ()=>{
+      dayState[item.id] = !dayState[item.id];
+      if(!dayState[item.id]) delete dayState[item.id];
+      appState.days[TODAY] = dayState;
+      await saveAppState();
+      renderGroup(groupId);
+      updateRing();
+      computeStreak();
+    });
+    container.appendChild(el);
+  });
+}
+
+function renderAllGroups(){
+  Object.keys(ITEMS).forEach(renderGroup);
+}
+
+function updateRing(){
+  const total = totalCount();
+  const done = allItemIds().filter(id=>dayState[id]).length;
+  const pct = total ? Math.round((done/total)*100) : 0;
+  const circumference = 188.5;
+  const offset = circumference - (pct/100)*circumference;
+  document.getElementById('ringFg').style.strokeDashoffset = offset;
+  document.getElementById('ringPct').textContent = pct + '%';
+  document.getElementById('headSub').textContent = `${done} из ${total} пунктов сегодня`;
+}
+
+function setHeaderDate(){
+  const d = new Date();
+  const opts = {weekday:'long', day:'numeric', month:'long'};
+  document.getElementById('headDate').textContent = d.toLocaleDateString('ru-RU', opts);
+}
+
+function dayCompletion(key){
+  const log = appState.days[key] || {};
+  const total = totalCount();
+  const done = allItemIds().filter(id=>log[id]).length;
+  return { done, total, complete: total>0 && done===total };
+}
+
+function computeStreak(){
+  const today = dayCompletion(TODAY);
+
+  let pastStreak = 0;
+  let dayBack = 1;
+  while(dayBack < 730){
+    const key = dateKeyOffset(-dayBack);
+    const c = dayCompletion(key);
+    if(c.total>0 && c.done===c.total){
+      pastStreak++;
+      dayBack++;
+    } else break;
+  }
+
+  const badge = document.getElementById('streakBadge');
+  const label = document.getElementById('streakLabel');
+  const flame = document.getElementById('flameIcon');
+  badge.classList.remove('risk','out');
+
+  let displayStreak;
+  if(today.complete){
+    displayStreak = pastStreak + 1;
+    label.textContent = 'дней подряд 🔥';
+    flame.textContent = '🔥';
+  } else if(pastStreak > 0){
+    displayStreak = pastStreak;
+    badge.classList.add('risk');
+    label.textContent = 'под угрозой — успей сегодня';
+    flame.textContent = '🔥';
+  } else {
+    displayStreak = 0;
+    badge.classList.add('out');
+    flame.textContent = '💨';
+    label.textContent = 'начни сегодня';
+  }
+  document.getElementById('streakNum').textContent = displayStreak;
+}
+
+function pctBar(value, goal){
+  return Math.max(0, Math.min(100, (value/goal)*100));
+}
+
+function loadStatsUI(){
+  const totals = appState.totals || {tg:0,tt:0,money:0};
+  document.getElementById('inTg').value = totals.tg || '';
+  document.getElementById('inTt').value = totals.tt || '';
+  document.getElementById('inMoney').value = totals.money || '';
+  document.getElementById('barTg').style.width = pctBar(totals.tg||0, GOALS.tg) + '%';
+  document.getElementById('barTt').style.width = pctBar(totals.tt||0, GOALS.tt) + '%';
+  document.getElementById('barMoney').style.width = pctBar(totals.money||0, GOALS.money) + '%';
+}
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 1600);
+}
+
+document.getElementById('saveStats').addEventListener('click', async ()=>{
+  const tgSubs = parseInt(document.getElementById('inTg').value) || 0;
+  const tt = parseInt(document.getElementById('inTt').value) || 0;
+  const money = parseInt(document.getElementById('inMoney').value) || 0;
+  appState.totals = { tg: tgSubs, tt, money };
+  await saveAppState();
+  document.getElementById('barTg').style.width = pctBar(tgSubs, GOALS.tg) + '%';
+  document.getElementById('barTt').style.width = pctBar(tt, GOALS.tt) + '%';
+  document.getElementById('barMoney').style.width = pctBar(money, GOALS.money) + '%';
+  showToast('Сохранено');
+});
+
+(async function init(){
+  setHeaderDate();
+  if(storageBroken) document.getElementById('storageWarning').style.display = 'block';
+  renderAllGroups();
+  updateRing();
+  try{
+    appState = await loadAppState();
+    dayState = appState.days[TODAY] || {};
+  }catch(e){
+    appState = { days: {}, totals: {tg:0,tt:0,money:0} };
+    dayState = {};
+  }
+  renderAllGroups();
+  updateRing();
+  loadStatsUI();
+  computeStreak();
+})();
+</script>
+</body>
+</html>
