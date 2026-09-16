@@ -1,0 +1,1140 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Здоровые привычки</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+
+  :root{
+    --bg: #0a0b0d;
+    --panel-line: rgba(255,255,255,0.09);
+    --text: #f4f3f0;
+    --text-dim: #9a9da5;
+    --text-dim2: #6f7278;
+    --rec: #ff6a3d;
+    --rec2: #ff3d77;
+    --teal: #2ee6d0;
+    --blue: #4fb0ff;
+    --amber: #ffc65c;
+    --violet: #8b7bff;
+  }
+  *{box-sizing:border-box;}
+  html{background:var(--bg);}
+  body{
+    margin:0;background:var(--bg);color:var(--text);
+    font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;
+    padding-bottom:90px;position:relative;overflow-x:hidden;
+  }
+  body::before{
+    content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+    background:
+      radial-gradient(700px 500px at 12% -8%, rgba(255,106,61,0.18), transparent 60%),
+      radial-gradient(600px 500px at 100% 8%, rgba(46,230,208,0.14), transparent 55%),
+      radial-gradient(650px 550px at 30% 105%, rgba(79,176,255,0.14), transparent 55%);
+  }
+  .wrap{max-width:480px;margin:0 auto;padding:20px 16px 0;position:relative;z-index:1;}
+
+  h1,h2,h3{margin:0;}
+  .card{
+    background:linear-gradient(160deg, rgba(255,255,255,0.055), rgba(255,255,255,0.015));
+    border:1px solid var(--panel-line);
+    border-radius:22px;
+    backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+    box-shadow:0 20px 40px -24px rgba(0,0,0,0.75);
+    padding:18px;
+    position:relative;
+    overflow:hidden;
+  }
+  .card::before{
+    content:'';position:absolute;top:0;left:0;right:0;height:1px;
+    background:linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+  }
+
+  button{-webkit-tap-highlight-color:transparent;}
+  .add-btn, .quick-btn, .food-add-btn, .scan-btn, .ob-btn, .sheet-btn, .vs-btn, .chip, .tab, .check-btn, .habit-del{
+    transition:transform .15s cubic-bezier(.4,0,.2,1), opacity .15s ease, background .2s ease, border-color .2s ease, box-shadow .2s ease;
+  }
+  .add-btn:active, .quick-btn:active, .food-add-btn:active, .scan-btn:active, .ob-btn:active, .sheet-btn:active, .vs-btn:active, .chip:active{
+    transform:scale(.96);
+  }
+
+  /* Screen header */
+  .screen-head{display:flex;align-items:center;gap:12px;margin:4px 0 18px;}
+  .screen-head-ic{
+    width:42px;height:42px;border-radius:13px;flex:none;
+    background:linear-gradient(135deg, rgba(255,255,255,0.09), rgba(255,255,255,0.02));
+    border:1px solid var(--panel-line);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .screen-head-ic svg{width:20px;height:20px;stroke:var(--text);fill:none;stroke-width:1.8;}
+  .screen-head-sub{font-size:12px;color:var(--text-dim2);margin-top:2px;}
+
+  /* Tabs */
+  .tabbar{
+    position:fixed;bottom:0;left:0;right:0;z-index:10;
+    background:rgba(15,16,19,0.85);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+    border-top:1px solid var(--panel-line);
+    display:flex;padding:10px 10px calc(10px + env(safe-area-inset-bottom));
+    gap:4px;
+  }
+  .tab{
+    flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;
+    padding:8px 4px;border:none;background:none;color:var(--text-dim2);
+    font-family:'Inter',sans-serif;font-size:10.5px;font-weight:500;cursor:pointer;
+    border-radius:14px;
+  }
+  .tab.active{color:var(--text);background:rgba(255,255,255,0.06);}
+  .tab .ic{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;transition:transform .2s cubic-bezier(.34,1.56,.64,1);}
+  .tab.active .ic{stroke:url(#tabActiveGrad);transform:translateY(-1px) scale(1.08);}
+
+  .screen{display:none;}
+  .screen.active{display:block;animation:fadeUp .3s ease both;}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+
+  h2.title{
+    font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:19px;margin:0;
+    background:linear-gradient(90deg, #ffffff, #c9cbd1);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    letter-spacing:-0.01em;
+  }
+  .screen .card, .screen .add-btn{animation:fadeUp .4s ease both;}
+  .screen .card:nth-of-type(2){animation-delay:.05s;}
+
+  /* Onboarding */
+  #onboarding{position:fixed;inset:0;background:var(--bg);z-index:50;overflow-y:auto;padding:24px 18px 40px;}
+  .ob-step{display:none;}
+  .ob-step.active{display:block;animation:fadeUp .3s ease both;}
+  .ob-label{font-size:13px;color:var(--text-dim);margin:18px 0 8px;}
+  .ob-input{
+    width:100%;background:rgba(255,255,255,0.05);border:1px solid var(--panel-line);
+    border-radius:12px;color:var(--text);font-family:'Space Grotesk',sans-serif;
+    font-size:17px;font-weight:600;padding:13px 14px;
+  }
+  .chip-row{display:flex;gap:8px;flex-wrap:wrap;}
+  .chip{
+    background:rgba(255,255,255,0.05);border:1.5px solid var(--panel-line);
+    border-radius:12px;padding:11px 14px;font-size:13.5px;color:var(--text-dim);cursor:pointer;flex:1;text-align:center;min-width:80px;
+  }
+  .chip.sel{border-color:var(--teal);color:var(--text);background:rgba(46,230,208,0.1);}
+  .ob-btn{
+    width:100%;margin-top:26px;background:linear-gradient(90deg, var(--rec), var(--rec2));
+    color:#0a0b0d;border:none;border-radius:14px;padding:15px;
+    font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14.5px;cursor:pointer;
+  }
+  .ob-hint{font-size:11.5px;color:var(--text-dim2);text-align:center;margin-top:14px;line-height:1.5;}
+
+  /* Rings & bars */
+  .big-ring-wrap{display:flex;flex-direction:column;align-items:center;padding:16px 0 8px;}
+  .big-ring{position:relative;width:150px;height:150px;filter:drop-shadow(0 0 18px rgba(46,230,208,0.18));}
+  .big-ring svg{transform:rotate(-90deg);}
+  .br-bg{fill:none;stroke:rgba(255,255,255,0.07);stroke-width:11;}
+  .br-fg{fill:none;stroke-width:11;stroke-linecap:round;transition:stroke-dashoffset .6s cubic-bezier(.4,0,.2,1);}
+  .big-ring-label{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+  .big-ring-label .num{font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:30px;letter-spacing:-0.02em;}
+  .big-ring-label .unit{font-size:11px;color:var(--text-dim);margin-top:3px;}
+
+  .quick-row{display:flex;gap:10px;margin-top:16px;}
+  .quick-btn{
+    flex:1;background:rgba(255,255,255,0.06);border:1px solid var(--panel-line);
+    border-radius:12px;padding:12px;color:var(--text);font-family:'Space Grotesk',sans-serif;
+    font-weight:600;font-size:13.5px;cursor:pointer;
+  }
+
+  .food-input-row{display:flex;gap:8px;margin-top:16px;}
+  .food-input-row input{flex:1;background:rgba(0,0,0,0.28);border:1px solid var(--panel-line);border-radius:10px;color:var(--text);font-size:14px;padding:11px;}
+  .food-input-row input.kcal{max-width:80px;font-family:'Space Grotesk',sans-serif;font-weight:600;}
+  .food-add-btn{background:var(--teal);border:none;border-radius:10px;padding:0 16px;color:#0a0b0d;font-weight:700;cursor:pointer;}
+  .scan-btn{
+    width:100%;display:flex;align-items:center;justify-content:center;gap:8px;
+    background:linear-gradient(90deg, rgba(139,123,255,0.16), rgba(79,176,255,0.16));
+    border:1px solid rgba(139,123,255,0.35);border-radius:12px;padding:13px;
+    color:var(--text);font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:13.5px;cursor:pointer;
+  }
+  .scan-btn:active{opacity:.8;}
+
+  .food-item{display:flex;justify-content:space-between;align-items:center;padding:12px 4px;border-bottom:1px solid var(--panel-line);}
+  .food-item:last-child{border-bottom:none;}
+  .food-name{font-size:14px;}
+  .food-kcal{font-family:'Space Grotesk',sans-serif;font-weight:600;color:var(--text-dim);font-size:13.5px;}
+  .food-del{background:none;border:none;color:var(--text-dim2);font-size:14px;margin-left:10px;cursor:pointer;}
+
+  /* Habits (reuse styles) */
+  .habit{background:transparent;padding:14px 4px;border-bottom:1px solid var(--panel-line);display:flex;align-items:center;gap:13px;transition:background .15s ease;border-radius:10px;}
+  .habit:active{background:rgba(255,255,255,0.03);}
+  .habit:last-child{border-bottom:none;}
+  .habit-body{flex:1;min-width:0;}
+  .habit-name{font-size:14.5px;transition:color .2s ease;}
+  .habit.done .habit-name{color:var(--text-dim);}
+  .habit-streak{font-size:11.5px;color:var(--text-dim2);margin-top:2px;}
+  .habit-streak b{color:var(--amber);}
+  .check-btn{
+    width:30px;height:30px;border-radius:50%;flex:none;
+    border:2px solid rgba(255,255,255,0.18);
+    display:flex;align-items:center;justify-content:center;
+    background:transparent;cursor:pointer;position:relative;
+    transition:border-color .2s ease, transform .15s cubic-bezier(.34,1.56,.64,1), background .25s ease;
+  }
+  .check-btn svg{width:14px;height:14px;opacity:0;transform:scale(.4);transition:opacity .18s ease, transform .3s cubic-bezier(.34,1.56,.64,1);}
+  .check-btn.checked{
+    background:linear-gradient(135deg, var(--teal), var(--blue));
+    border-color:transparent;
+    transform:scale(1.08);
+    box-shadow:0 0 0 5px rgba(46,230,208,0.12);
+  }
+  .check-btn.checked svg{opacity:1;transform:scale(1);}
+  .check-btn:active{transform:scale(.9);}
+  .habit-del{background:none;border:none;color:var(--text-dim2);font-size:14px;cursor:pointer;}
+
+  .add-btn{width:100%;margin-top:12px;background:transparent;border:1.5px dashed var(--panel-line);color:var(--text-dim);border-radius:12px;padding:13px;font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:14px;cursor:pointer;}
+
+  .sheet-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:flex-end;justify-content:center;z-index:40;}
+  .sheet-overlay.show{display:flex;}
+  .sheet{background:#16181c;width:100%;max-width:480px;border-radius:20px 20px 0 0;padding:20px 18px 30px;}
+  .sheet input{width:100%;background:rgba(0,0,0,0.3);border:1px solid var(--panel-line);border-radius:10px;color:var(--text);font-size:15px;padding:12px;margin-top:10px;}
+  .sheet-actions{display:flex;gap:10px;margin-top:16px;}
+  .sheet-btn{flex:1;border:none;border-radius:12px;padding:13px;font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:14px;cursor:pointer;}
+  .sheet-btn.primary{background:var(--teal);color:#0a0b0d;}
+  .sheet-btn.ghost{background:transparent;border:1px solid var(--panel-line);color:var(--text);}
+
+  .profile-row{display:flex;justify-content:space-between;align-items:center;padding:13px 0;border-bottom:1px solid var(--panel-line);font-size:13.5px;color:var(--text-dim);}
+  .profile-row:last-child{border-bottom:none;}
+  .profile-row b{font-family:'Space Grotesk',sans-serif;color:var(--text);font-size:14px;}
+
+  .disclaimer{font-size:11px;color:var(--text-dim2);line-height:1.5;margin-top:14px;padding:0 4px;}
+
+  /* View switch */
+  .view-switch{display:flex;gap:8px;margin-bottom:14px;}
+  .vs-btn{flex:1;background:rgba(255,255,255,0.05);border:1px solid var(--panel-line);border-radius:11px;padding:10px;color:var(--text-dim);font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:13px;cursor:pointer;}
+  .vs-btn.active{background:linear-gradient(90deg, var(--teal), var(--blue));color:#0a0b0d;border-color:transparent;}
+
+  /* Grid dashboard */
+  .grid-stats-top{text-align:center;margin-bottom:10px;}
+  .grid-stat-num{font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:32px;background:linear-gradient(90deg, var(--teal), var(--blue));-webkit-background-clip:text;background-clip:text;color:transparent;}
+  .grid-stat-label{font-size:12px;color:var(--text-dim2);margin-top:2px;}
+  .week-bars{display:flex;align-items:flex-end;gap:8px;height:60px;margin-top:14px;}
+  .week-bar-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:5px;}
+  .week-bar-fill{width:100%;border-radius:6px 6px 3px 3px;background:linear-gradient(180deg, var(--amber), var(--rec));transition:height .4s ease;}
+  .week-bar-label{font-size:9.5px;color:var(--text-dim2);}
+
+  #habitGridTable{font-size:12px;}
+  #habitGridTable th, #habitGridTable td{padding:8px 7px;text-align:center;border-bottom:1px solid var(--panel-line);}
+  #habitGridTable th.habit-name-col, #habitGridTable td.habit-name-col{
+    position:sticky;left:0;background:#121317;text-align:left;min-width:130px;max-width:130px;
+    font-size:12.5px;padding-left:12px;z-index:2;border-right:1px solid var(--panel-line);
+  }
+  #habitGridTable th{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:10.5px;color:#0a0b0d;min-width:34px;}
+  .day-cell{width:20px;height:20px;border-radius:6px;border:1.5px solid rgba(255,255,255,0.15);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;}
+  .day-cell.done{background:rgba(46,230,208,0.9);border-color:transparent;color:#0a0b0d;font-weight:700;font-size:11px;}
+</style>
+</head>
+<body>
+
+<div id="onboarding">
+  <h2 class="title" style="margin-top:20px;">Расскажи о себе</h2>
+  <div id="obStep1" class="ob-step active">
+    <div class="ob-label">Пол</div>
+    <div class="chip-row">
+      <div class="chip" data-field="gender" data-value="m">Мужской</div>
+      <div class="chip" data-field="gender" data-value="f">Женский</div>
+    </div>
+    <div class="ob-label">Возраст</div>
+    <input class="ob-input" type="number" id="obAge" placeholder="напр. 27" inputmode="numeric">
+    <div class="ob-label">Рост, см</div>
+    <input class="ob-input" type="number" id="obHeight" placeholder="напр. 178" inputmode="numeric">
+    <div class="ob-label">Вес, кг</div>
+    <input class="ob-input" type="number" id="obWeight" placeholder="напр. 72" inputmode="decimal">
+    <button class="ob-btn" id="obNext1">Дальше</button>
+  </div>
+
+  <div id="obStep2" class="ob-step">
+    <div class="ob-label">Уровень активности</div>
+    <div class="chip-row" style="flex-direction:column;">
+      <div class="chip" data-field="activity" data-value="1.2" style="flex:none;">Сидячий образ жизни</div>
+      <div class="chip" data-field="activity" data-value="1.375" style="flex:none;">Лёгкая активность (1-3 трен./нед)</div>
+      <div class="chip" data-field="activity" data-value="1.55" style="flex:none;">Умеренная (3-5 трен./нед)</div>
+      <div class="chip" data-field="activity" data-value="1.725" style="flex:none;">Высокая (6-7 трен./нед)</div>
+      <div class="chip" data-field="activity" data-value="1.9" style="flex:none;">Очень высокая / физ. работа</div>
+    </div>
+    <div class="ob-label">Цель</div>
+    <div class="chip-row">
+      <div class="chip" data-field="goal" data-value="lose">Похудение</div>
+      <div class="chip" data-field="goal" data-value="maintain">Поддержание</div>
+      <div class="chip" data-field="goal" data-value="gain">Набор массы</div>
+    </div>
+    <button class="ob-btn" id="obFinish">Рассчитать</button>
+    <div class="ob-hint">Это ориентировочный расчёт по стандартным формулам, а не медицинская рекомендация. При особых состояниях здоровья — беременность, диагнозы, приём препаратов — посоветуйся с врачом.</div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div id="screenOverview" class="screen active">
+    <div class="screen-head">
+      <div class="screen-head-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div>
+        <h2 class="title">Обзор</h2>
+        <div class="screen-head-sub">Всё сразу: привычки, вода, калории</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="big-ring-wrap" style="padding:10px 0 4px;">
+        <div class="big-ring" style="width:150px;height:150px;">
+          <svg viewBox="0 0 120 120" width="150" height="150">
+            <defs>
+              <linearGradient id="overallGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#8b7bff"/>
+                <stop offset="100%" stop-color="#ff3d77"/>
+              </linearGradient>
+            </defs>
+            <circle class="br-bg" cx="60" cy="60" r="50" stroke-width="10"></circle>
+            <circle id="overallRing" class="br-fg" stroke="url(#overallGrad)" stroke-width="10" cx="60" cy="60" r="50" stroke-dasharray="314" stroke-dashoffset="314"></circle>
+          </svg>
+          <div class="big-ring-label">
+            <div class="num" id="overallPct" style="font-size:28px;">0%</div>
+            <div class="unit">прогресс дня</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="profile-row"><span>Привычки</span><b id="ovHabitsPct">0%</b></div>
+      <div class="profile-row"><span>Вода</span><b id="ovWaterPct">0%</b></div>
+      <div class="profile-row"><span>Калории</span><b id="ovFoodPct">0%</b></div>
+    </div>
+  </div>
+  <div id="screenHabits" class="screen">
+    <div class="screen-head">
+      <div class="screen-head-ic"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div>
+        <h2 class="title">Привычки</h2>
+        <div class="screen-head-sub">Держи фокус день за днём</div>
+      </div>
+    </div>
+    <div class="view-switch">
+      <button class="vs-btn active" id="vsToday">Сегодня</button>
+      <button class="vs-btn" id="vsGrid">Таблица</button>
+    </div>
+
+    <div id="habitsTodayView">
+      <div class="card" style="margin-bottom:12px;">
+        <div class="big-ring-wrap" style="padding:6px 0 2px;">
+          <div class="big-ring" style="width:120px;height:120px;">
+            <svg viewBox="0 0 120 120" width="120" height="120">
+              <defs>
+                <linearGradient id="todayGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#ff6a3d"/>
+                  <stop offset="100%" stop-color="#ff3d77"/>
+                </linearGradient>
+              </defs>
+              <circle class="br-bg" cx="60" cy="60" r="50" stroke-width="9"></circle>
+              <circle id="todayRing" class="br-fg" stroke="url(#todayGrad)" stroke-width="9" cx="60" cy="60" r="50" stroke-dasharray="314" stroke-dashoffset="314"></circle>
+            </svg>
+            <div class="big-ring-label">
+              <div class="num" id="todayPct" style="font-size:24px;">0%</div>
+              <div class="unit">за сегодня</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card" id="habitList"></div>
+      <button class="add-btn" id="addHabitBtn">+ Добавить привычку</button>
+    </div>
+
+    <div id="habitsGridView" style="display:none;">
+      <div class="card" style="margin-bottom:12px;">
+        <div class="grid-stats-top">
+          <div class="grid-stat-num" id="gridWeekPct">0%</div>
+          <div class="grid-stat-label">выполнено за эту неделю</div>
+        </div>
+        <div class="week-bars" id="weekBars"></div>
+        <svg id="trendSvg" viewBox="0 0 300 60" style="width:100%;height:60px;margin-top:14px;"></svg>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden;">
+        <div id="gridTableWrap" style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
+          <table id="habitGridTable" style="border-collapse:collapse;width:max-content;"></table>
+        </div>
+      </div>
+      <button class="add-btn" id="addHabitBtnGrid">+ Добавить привычку</button>
+    </div>
+  </div>
+
+  <div id="screenWater" class="screen">
+    <div class="screen-head">
+      <div class="screen-head-ic"><svg viewBox="0 0 24 24"><path d="M12 2.5s7 7.6 7 12.5a7 7 0 0 1-14 0c0-4.9 7-12.5 7-12.5Z" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div>
+        <h2 class="title">Вода</h2>
+        <div class="screen-head-sub">Пей стабильно в течение дня</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="big-ring-wrap">
+        <div class="big-ring">
+          <svg viewBox="0 0 150 150" width="150" height="150">
+            <defs>
+              <linearGradient id="waterGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#4fb0ff"/>
+                <stop offset="100%" stop-color="#2ee6d0"/>
+              </linearGradient>
+            </defs>
+            <circle class="br-bg" cx="75" cy="75" r="64"></circle>
+            <circle id="waterRing" class="br-fg" stroke="url(#waterGrad)" cx="75" cy="75" r="64" stroke-dasharray="402" stroke-dashoffset="402"></circle>
+          </svg>
+          <div class="big-ring-label">
+            <div class="num" id="waterNum">0</div>
+            <div class="unit">из <span id="waterGoalLabel">2000</span> мл</div>
+          </div>
+        </div>
+      </div>
+      <div class="quick-row">
+        <button class="quick-btn" data-water="250">+250 мл</button>
+        <button class="quick-btn" data-water="500">+500 мл</button>
+        <button class="quick-btn" data-water="-250">−250 мл</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="screenFood" class="screen">
+    <div class="screen-head">
+      <div class="screen-head-ic"><svg viewBox="0 0 24 24"><path d="M7 2v6a2 2 0 0 0 2 2v0a2 2 0 0 0 2-2V2M7 2v20M11 2v6M17 2c-1.7 0-3 2.2-3 5s1.3 5 3 5v10" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div>
+        <h2 class="title">Калории</h2>
+        <div class="screen-head-sub">Питание под твою норму</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="big-ring-wrap">
+        <div class="big-ring">
+          <svg viewBox="0 0 150 150" width="150" height="150">
+            <defs>
+              <linearGradient id="kcalGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#ff6a3d"/>
+                <stop offset="100%" stop-color="#ff3d77"/>
+              </linearGradient>
+            </defs>
+            <circle class="br-bg" cx="75" cy="75" r="64"></circle>
+            <circle id="kcalRing" class="br-fg" stroke="url(#kcalGrad)" cx="75" cy="75" r="64" stroke-dasharray="402" stroke-dashoffset="402"></circle>
+          </svg>
+          <div class="big-ring-label">
+            <div class="num" id="kcalNum">0</div>
+            <div class="unit">из <span id="kcalGoalLabel">2000</span> ккал</div>
+          </div>
+        </div>
+      </div>
+      <div class="food-input-row" style="position:relative;margin-top:14px;">
+        <input type="text" id="foodName" placeholder="Что съел? Например, макароны" autocomplete="off">
+      </div>
+      <div id="foodSuggestions" style="display:none;margin-top:6px;border:1px solid var(--panel-line);border-radius:12px;overflow:hidden;background:rgba(0,0,0,0.3);"></div>
+      <div class="food-input-row">
+        <input type="number" id="foodGrams" class="kcal" placeholder="грамм" value="200" inputmode="numeric" style="max-width:90px;">
+        <input type="number" class="kcal" id="foodKcal" placeholder="ккал" inputmode="numeric">
+        <button class="food-add-btn" id="addFoodBtn">+</button>
+      </div>
+      <div id="foodDbHint" style="font-size:11px;color:var(--text-dim2);margin-top:8px;">В базе ~60 популярных блюд — начни печатать, калории подставятся сами. Если блюда нет в базе — впиши ккал вручную.</div>
+    </div>
+    <div class="card" style="margin-top:12px;">
+      <div id="foodList"></div>
+      <div id="foodEmpty" style="text-align:center;color:var(--text-dim2);font-size:13px;padding:10px 0;">Сегодня пока ничего не добавлено</div>
+    </div>
+  </div>
+
+  <div id="screenProfile" class="screen">
+    <div class="screen-head">
+      <div class="screen-head-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M4.5 20.5a7.5 7.5 0 0 1 15 0" stroke-linecap="round"/></svg></div>
+      <div>
+        <h2 class="title">Профиль</h2>
+        <div class="screen-head-sub">Твои личные нормы</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="profile-row"><span>Пол</span><b id="pfGender">—</b></div>
+      <div class="profile-row"><span>Возраст</span><b id="pfAge">—</b></div>
+      <div class="profile-row"><span>Рост</span><b id="pfHeight">—</b></div>
+      <div class="profile-row"><span>Вес</span><b id="pfWeight">—</b></div>
+      <div class="profile-row"><span>Цель</span><b id="pfGoal">—</b></div>
+      <div class="profile-row"><span>Норма калорий</span><b id="pfKcal">—</b></div>
+      <div class="profile-row"><span>Норма воды</span><b id="pfWater">—</b></div>
+    </div>
+    <button class="add-btn" id="recalcBtn">Пересчитать заново</button>
+    <div class="disclaimer">Расчёт по формуле Миффлина-Сан Жеора, ориентировочный. Не заменяет консультацию врача или диетолога.</div>
+
+    <h2 class="title" style="margin-top:26px;">Норма нагрузки на день</h2>
+    <div class="card">
+      <div class="profile-row"><span>Отжимания</span><b id="pfPushups">—</b></div>
+      <div class="profile-row"><span>Подтягивания</span><b id="pfPullups">—</b></div>
+      <div class="profile-row"><span>Приседания</span><b id="pfSquats">—</b></div>
+      <div class="profile-row"><span>Пресс</span><b id="pfAbs">—</b></div>
+      <button class="add-btn" id="addExerciseHabitsBtn" style="margin-top:14px;">Добавить как привычки</button>
+    </div>
+    <div class="disclaimer">Ориентировочный стартовый объём, рассчитан по росту, весу и уровню активности — не спортивный норматив. Слушай своё тело и наращивай постепенно.</div>
+
+    <div id="ownerStatsBlock" style="display:none;margin-top:26px;">
+      <h2 class="title">Статистика приложения</h2>
+      <div class="card">
+        <div class="profile-row"><span>Всего зарегистрировано</span><b id="ownerUserCount">—</b></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<svg width="0" height="0" style="position:absolute;">
+  <defs>
+    <linearGradient id="tabActiveGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ff6a3d"/>
+      <stop offset="100%" stop-color="#ff3d77"/>
+    </linearGradient>
+  </defs>
+</svg>
+
+<div class="tabbar">
+  <button class="tab active" data-screen="Overview">
+    <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Обзор
+  </button>
+  <button class="tab" data-screen="Habits">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Привычки
+  </button>
+  <button class="tab" data-screen="Water">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 2.5s7 7.6 7 12.5a7 7 0 0 1-14 0c0-4.9 7-12.5 7-12.5Z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Вода
+  </button>
+  <button class="tab" data-screen="Food">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M7 2v6a2 2 0 0 0 2 2v0a2 2 0 0 0 2-2V2M7 2v20M11 2v6M17 2c-1.7 0-3 2.2-3 5s1.3 5 3 5v10" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Калории
+  </button>
+  <button class="tab" data-screen="Profile">
+    <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M4.5 20.5a7.5 7.5 0 0 1 15 0" stroke-linecap="round"/></svg>
+    Профиль
+  </button>
+</div>
+
+<div class="sheet-overlay" id="habitSheetOverlay">
+  <div class="sheet">
+    <h3 style="font-family:'Space Grotesk',sans-serif;">Новая привычка</h3>
+    <input type="text" id="newHabitName" placeholder="Например, читать 10 страниц">
+    <div class="sheet-actions">
+      <button class="sheet-btn ghost" id="cancelHabitSheet">Отмена</button>
+      <button class="sheet-btn primary" id="confirmHabitSheet">Добавить</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+const inTelegram = !!(tg && tg.initData !== undefined && tg.platform !== 'unknown');
+if(tg){ tg.ready(); tg.expand(); }
+
+function pad(n){return n.toString().padStart(2,'0');}
+function todayKey(){ const d=new Date(); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+function dayOffset(n){ const d=new Date(); d.setDate(d.getDate()+n); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+function uid(){ return 'h'+Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+const TODAY = todayKey();
+
+function cloudGet(key){
+  return new Promise(resolve=>{
+    if(!tg || !tg.CloudStorage){ resolve(null); return; }
+    try{ tg.CloudStorage.getItem(key, (err,val)=> resolve(err||!val?null:val)); }
+    catch(e){ resolve(null); }
+  });
+}
+function cloudSet(key, value){
+  return new Promise(resolve=>{
+    if(!tg || !tg.CloudStorage){ resolve(false); return; }
+    try{ tg.CloudStorage.setItem(key, value, (err,ok)=> resolve(!!ok && !err)); }
+    catch(e){ resolve(false); }
+  });
+}
+
+let state = {
+  profile: null, // {gender,age,height,weight,activity,goal,kcalGoal,waterGoal}
+  habits: [],
+  habitLogs: {},
+  water: {},      // {date: ml}
+  food: {},       // {date: [{id,name,kcal}]}
+  settings: {}    // {apiKey}
+};
+
+async function loadState(){
+  if(!inTelegram) return state;
+  const raw = await cloudGet('wellness_state');
+  if(!raw) return state;
+  try{ return Object.assign({profile:null,habits:[],habitLogs:{},water:{},food:{},settings:{}}, JSON.parse(raw)); }
+  catch(e){ return state; }
+}
+async function saveState(){
+  if(!inTelegram) return;
+  await cloudSet('wellness_state', JSON.stringify(state));
+}
+
+// ---------- Onboarding ----------
+const obChoices = { gender:null, activity:null, goal:null };
+document.querySelectorAll('.chip').forEach(chip=>{
+  chip.addEventListener('click', ()=>{
+    const field = chip.dataset.field;
+    document.querySelectorAll(`.chip[data-field="${field}"]`).forEach(c=>c.classList.remove('sel'));
+    chip.classList.add('sel');
+    obChoices[field] = chip.dataset.value;
+  });
+});
+document.getElementById('obNext1').addEventListener('click', ()=>{
+  const age = parseInt(document.getElementById('obAge').value);
+  const height = parseFloat(document.getElementById('obHeight').value);
+  const weight = parseFloat(document.getElementById('obWeight').value);
+  if(!obChoices.gender || !age || !height || !weight){ return; }
+  document.getElementById('obStep1').classList.remove('active');
+  document.getElementById('obStep2').classList.add('active');
+});
+function idealWeightKg(heightCm, gender){
+  const heightIn = heightCm/2.54;
+  const base = gender==='m' ? 50 : 45.5;
+  return base + 2.3*Math.max(0, heightIn-60);
+}
+function fitnessLevelFromActivity(activity){
+  const map = {1.2:1, 1.375:2, 1.55:3, 1.725:4, 1.9:5};
+  return map[activity] || 3;
+}
+function calcExerciseTargets(profile){
+  const level = fitnessLevelFromActivity(profile.activity);
+  const ideal = idealWeightKg(profile.height, profile.gender);
+  let ratio = ideal / profile.weight;
+  ratio = Math.max(0.6, Math.min(1.15, ratio));
+  const goalMult = profile.goal==='gain' ? 1.15 : (profile.goal==='lose' ? 0.9 : 1);
+  const pushups = Math.max(5, Math.round(level*8*ratio*goalMult/5)*5);
+  const pullups = Math.max(1, Math.round(level*1*ratio*goalMult));
+  const squats = Math.max(10, Math.round(level*10*ratio*goalMult/5)*5);
+  const abs = Math.max(10, Math.round(level*15*ratio*goalMult/5)*5);
+  return { pushups, pullups, squats, abs };
+}
+
+// ---------- Счётчик зарегистрированных (виден только владельцу) ----------
+const OWNER_TELEGRAM_ID = 1524219371;
+const COUNTER_NAMESPACE = 'expert-octo-spork-wellness';
+const COUNTER_KEY = 'registered_users';
+
+function isOwner(){
+  return !!(tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id === OWNER_TELEGRAM_ID && OWNER_TELEGRAM_ID);
+}
+async function registerNewUserHit(){
+  try{ await fetch(`https://abacus.jasoncameron.dev/hit/${COUNTER_NAMESPACE}/${COUNTER_KEY}`); }
+  catch(e){ /* тихо игнорируем, счётчик не критичен для работы приложения */ }
+}
+async function fetchRegisteredCount(){
+  try{
+    const r = await fetch(`https://abacus.jasoncameron.dev/get/${COUNTER_NAMESPACE}/${COUNTER_KEY}`);
+    const j = await r.json();
+    return j.value;
+  }catch(e){ return null; }
+}
+
+document.getElementById('obFinish').addEventListener('click', async ()=>{
+  if(!obChoices.activity || !obChoices.goal) return;
+  const age = parseInt(document.getElementById('obAge').value);
+  const height = parseFloat(document.getElementById('obHeight').value);
+  const weight = parseFloat(document.getElementById('obWeight').value);
+  const gender = obChoices.gender;
+  const activity = parseFloat(obChoices.activity);
+  const goal = obChoices.goal;
+
+  let bmr = 10*weight + 6.25*height - 5*age + (gender==='m' ? 5 : -161);
+  let tdee = bmr * activity;
+  let kcalGoal = tdee;
+  if(goal==='lose') kcalGoal = tdee - 500;
+  if(goal==='gain') kcalGoal = tdee + 400;
+  kcalGoal = Math.max(1200, Math.round(kcalGoal/10)*10);
+
+  let waterGoal = Math.round((weight*33)/50)*50;
+  if(activity>=1.55) waterGoal += 300;
+
+  const isFirstTimeEver = !state.profile;
+  const exercise = calcExerciseTargets({ gender, height, weight, activity, goal });
+
+  state.profile = { gender, age, height, weight, activity, goal, kcalGoal, waterGoal, exercise };
+  await saveState();
+  document.getElementById('onboarding').style.display = 'none';
+  renderProfile();
+  updateWaterUI();
+  updateKcalUI();
+
+  if(isFirstTimeEver) registerNewUserHit();
+});
+
+// ---------- Tabs ----------
+document.querySelectorAll('.tab').forEach(tab=>{
+  tab.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('screen'+tab.dataset.screen).classList.add('active');
+  });
+});
+
+// ---------- Habits ----------
+const ICON_CHECK = '<svg viewBox="0 0 24 24" fill="none"><path d="M4 12l5 5L20 6" stroke="#0a0b0d" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+function habitStreak(id){
+  let streak=0, i=0;
+  while(i<3650){
+    const key = i===0 ? TODAY : dayOffset(-i);
+    const done = state.habitLogs[key] && state.habitLogs[key][id];
+    if(done){ streak++; i++; }
+    else if(i===0){ i++; continue; }
+    else break;
+  }
+  return streak;
+}
+function renderHabits(){
+  const list = document.getElementById('habitList');
+  list.innerHTML = '';
+
+  const total = state.habits.length;
+  const doneCount = total ? state.habits.filter(h => state.habitLogs[TODAY] && state.habitLogs[TODAY][h.id]).length : 0;
+  const pct = total ? Math.round((doneCount/total)*100) : 0;
+  const circumference = 314;
+  document.getElementById('todayRing').style.strokeDashoffset = circumference - (pct/100)*circumference;
+  document.getElementById('todayPct').textContent = pct + '%';
+  renderOverview();
+
+  if(state.habits.length===0){
+    list.innerHTML = '<div style="text-align:center;color:var(--text-dim2);font-size:13px;padding:20px 0;">Пока нет привычек — добавь первую ниже</div>';
+    return;
+  }
+  state.habits.forEach(h=>{
+    const done = !!(state.habitLogs[TODAY] && state.habitLogs[TODAY][h.id]);
+    const streak = habitStreak(h.id);
+    const el = document.createElement('div');
+    el.className = 'habit' + (done ? ' done' : '');
+    el.innerHTML = `
+      <div class="habit-body">
+        <div class="habit-name">${h.name}</div>
+        <div class="habit-streak">${streak>0?`<b>${streak}</b> дней подряд`:'начни сегодня'}</div>
+      </div>
+      <button class="check-btn ${done?'checked':''}" data-id="${h.id}">${ICON_CHECK}</button>
+      <button class="habit-del" data-del="${h.id}">✕</button>
+    `;
+    list.appendChild(el);
+  });
+  list.querySelectorAll('.check-btn').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const id = btn.dataset.id;
+      if(!state.habitLogs[TODAY]) state.habitLogs[TODAY] = {};
+      state.habitLogs[TODAY][id] = !state.habitLogs[TODAY][id];
+      if(!state.habitLogs[TODAY][id]) delete state.habitLogs[TODAY][id];
+      await saveState();
+      renderHabits();
+    });
+  });
+  list.querySelectorAll('[data-del]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      state.habits = state.habits.filter(h=>h.id!==btn.dataset.del);
+      await saveState();
+      renderHabits();
+    });
+  });
+}
+const habitSheet = document.getElementById('habitSheetOverlay');
+document.getElementById('addHabitBtn').addEventListener('click', ()=>{
+  document.getElementById('newHabitName').value='';
+  habitSheet.classList.add('show');
+});
+document.getElementById('addHabitBtnGrid').addEventListener('click', ()=>{
+  document.getElementById('newHabitName').value='';
+  habitSheet.classList.add('show');
+});
+document.getElementById('cancelHabitSheet').addEventListener('click', ()=> habitSheet.classList.remove('show'));
+habitSheet.addEventListener('click', e=>{ if(e.target===habitSheet) habitSheet.classList.remove('show'); });
+document.getElementById('confirmHabitSheet').addEventListener('click', async ()=>{
+  const name = document.getElementById('newHabitName').value.trim();
+  if(!name) return;
+  state.habits.push({id:uid(), name});
+  await saveState();
+  habitSheet.classList.remove('show');
+  renderHabits();
+  renderHabitGrid();
+});
+
+// ---------- Сегодня / Таблица ----------
+document.getElementById('vsToday').addEventListener('click', ()=>{
+  document.getElementById('vsToday').classList.add('active');
+  document.getElementById('vsGrid').classList.remove('active');
+  document.getElementById('habitsTodayView').style.display = 'block';
+  document.getElementById('habitsGridView').style.display = 'none';
+});
+document.getElementById('vsGrid').addEventListener('click', ()=>{
+  document.getElementById('vsGrid').classList.add('active');
+  document.getElementById('vsToday').classList.remove('active');
+  document.getElementById('habitsGridView').style.display = 'block';
+  document.getElementById('habitsTodayView').style.display = 'none';
+  renderHabitGrid();
+});
+
+const WEEKDAY_SHORT = ['вс','пн','вт','ср','чт','пт','сб'];
+const WEEK_COLORS = ['#2ee6d0','#ffc65c','#8b7bff'];
+
+function dayCompletionFraction(key){
+  const total = state.habits.length;
+  if(total===0) return 0;
+  const log = state.habitLogs[key] || {};
+  const done = state.habits.filter(h=>log[h.id]).length;
+  return done/total;
+}
+
+function renderHabitGrid(){
+  const DAYS = 14;
+  const dates = [];
+  for(let i=DAYS-1;i>=0;i--) dates.push(dayOffset(-i));
+
+  // Недельные бары (последние 4 недели по 7 дней)
+  const barsBox = document.getElementById('weekBars');
+  barsBox.innerHTML = '';
+  const weeks = [];
+  for(let w=3; w>=0; w--){
+    let sum=0, count=0;
+    for(let d=0; d<7; d++){
+      const key = dayOffset(-(w*7+d));
+      sum += dayCompletionFraction(key);
+      count++;
+    }
+    weeks.push(Math.round((sum/count)*100));
+  }
+  weeks.forEach((pct,i)=>{
+    const col = document.createElement('div');
+    col.className = 'week-bar-col';
+    col.innerHTML = `<div class="week-bar-fill" style="height:${Math.max(4,pct)}%;"></div><div class="week-bar-label">${pct}%</div>`;
+    barsBox.appendChild(col);
+  });
+  document.getElementById('gridWeekPct').textContent = weeks[weeks.length-1] + '%';
+
+  // Тренд-график (последние 14 дней)
+  const trendVals = dates.map(k => Math.round(dayCompletionFraction(k)*100));
+  const svg = document.getElementById('trendSvg');
+  const w=300,h=60,pad=4;
+  const stepX = (w-pad*2)/(trendVals.length-1 || 1);
+  const pts = trendVals.map((v,i)=>{
+    const x = pad + i*stepX;
+    const y = h-pad - (v/100)*(h-pad*2);
+    return `${x},${y}`;
+  });
+  const line = 'M'+pts.join(' L');
+  const area = `M${pad},${h-pad} L${pts.join(' L')} L${w-pad},${h-pad} Z`;
+  svg.innerHTML = `
+    <defs><linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2ee6d0" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#2ee6d0" stop-opacity="0"/>
+    </linearGradient></defs>
+    <path d="${area}" fill="url(#trendFill)"/>
+    <path d="${line}" fill="none" stroke="#2ee6d0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  `;
+
+  // Таблица
+  const table = document.getElementById('habitGridTable');
+  let theadRow1 = '<tr><th class="habit-name-col" style="background:#121317;"></th>';
+  let theadRow2 = '<tr><th class="habit-name-col" style="background:#121317;color:var(--text-dim2);font-weight:500;">Привычка</th>';
+  dates.forEach((key,i)=>{
+    const d = new Date(key);
+    const weekIdx = Math.floor((DAYS-1-i)/7);
+    const color = WEEK_COLORS[weekIdx % WEEK_COLORS.length];
+    theadRow1 += `<th style="background:${color};font-size:9px;">${d.getDate()}</th>`;
+    theadRow2 += `<th style="color:var(--text-dim2);font-weight:500;">${WEEKDAY_SHORT[d.getDay()]}</th>`;
+  });
+  theadRow1 += '</tr>';
+  theadRow2 += '</tr>';
+
+  let bodyRows = '';
+  if(state.habits.length===0){
+    bodyRows = `<tr><td class="habit-name-col">—</td>${dates.map(()=>'<td></td>').join('')}</tr>`;
+  } else {
+    state.habits.forEach(h=>{
+      bodyRows += `<tr><td class="habit-name-col">${h.name}</td>`;
+      dates.forEach(key=>{
+        const done = !!(state.habitLogs[key] && state.habitLogs[key][h.id]);
+        bodyRows += `<td><span class="day-cell ${done?'done':''}" data-habit="${h.id}" data-date="${key}">${done?'✓':''}</span></td>`;
+      });
+      bodyRows += '</tr>';
+    });
+  }
+  table.innerHTML = theadRow1 + theadRow2 + bodyRows;
+
+  table.querySelectorAll('.day-cell').forEach(cell=>{
+    cell.addEventListener('click', async ()=>{
+      const hid = cell.dataset.habit;
+      const date = cell.dataset.date;
+      if(!state.habitLogs[date]) state.habitLogs[date] = {};
+      state.habitLogs[date][hid] = !state.habitLogs[date][hid];
+      if(!state.habitLogs[date][hid]) delete state.habitLogs[date][hid];
+      await saveState();
+      renderHabitGrid();
+      renderHabits();
+    });
+  });
+}
+
+// ---------- Overview ----------
+function renderOverview(){
+  const totalHabits = state.habits.length;
+  const doneHabits = totalHabits ? state.habits.filter(h => state.habitLogs[TODAY] && state.habitLogs[TODAY][h.id]).length : 0;
+  const habitsPct = totalHabits ? Math.round((doneHabits/totalHabits)*100) : 0;
+
+  const waterGoal = state.profile ? state.profile.waterGoal : 2000;
+  const waterVal = state.water[TODAY] || 0;
+  const waterPct = Math.round(Math.max(0, Math.min(1, waterVal/waterGoal))*100);
+
+  const kcalGoal = state.profile ? state.profile.kcalGoal : 2000;
+  const kcalConsumed = (state.food[TODAY]||[]).reduce((s,e)=>s+e.kcal,0);
+  const foodPct = Math.round(Math.max(0, Math.min(1, kcalConsumed/kcalGoal))*100);
+
+  document.getElementById('ovHabitsPct').textContent = habitsPct + '%';
+  document.getElementById('ovWaterPct').textContent = waterPct + '%';
+  document.getElementById('ovFoodPct').textContent = foodPct + '%';
+
+  const parts = totalHabits ? [habitsPct, waterPct, foodPct] : [waterPct, foodPct];
+  const overallPct = Math.round(parts.reduce((a,b)=>a+b,0)/parts.length);
+  const circumference = 314;
+  document.getElementById('overallRing').style.strokeDashoffset = circumference - (overallPct/100)*circumference;
+  document.getElementById('overallPct').textContent = overallPct + '%';
+}
+
+// ---------- Water ----------
+function updateWaterUI(){
+  const goal = state.profile ? state.profile.waterGoal : 2000;
+  const val = state.water[TODAY] || 0;
+  document.getElementById('waterGoalLabel').textContent = goal;
+  document.getElementById('waterNum').textContent = val;
+  const pct = Math.max(0, Math.min(1, val/goal));
+  const c = 402;
+  document.getElementById('waterRing').style.strokeDashoffset = c - pct*c;
+  renderOverview();
+}
+document.querySelectorAll('[data-water]').forEach(btn=>{
+  btn.addEventListener('click', async ()=>{
+    const delta = parseInt(btn.dataset.water);
+    const cur = state.water[TODAY] || 0;
+    state.water[TODAY] = Math.max(0, cur + delta);
+    await saveState();
+    updateWaterUI();
+  });
+});
+
+// ---------- Food ----------
+// калорийность указана на 100 г готового продукта (усреднённые общедоступные данные)
+const FOOD_DB = [
+  {name:'Макароны отварные', kcal100:135},
+  {name:'Гречка отварная', kcal100:110},
+  {name:'Рис отварной', kcal100:116},
+  {name:'Картофель отварной', kcal100:82},
+  {name:'Картофель жареный', kcal100:192},
+  {name:'Картофельное пюре', kcal100:106},
+  {name:'Куриная грудка отварная', kcal100:137},
+  {name:'Куриная грудка жареная', kcal100:190},
+  {name:'Курица жареная (с кожей)', kcal100:210},
+  {name:'Говядина отварная', kcal100:254},
+  {name:'Свинина жареная', kcal100:280},
+  {name:'Котлета жареная', kcal100:220},
+  {name:'Сосиски', kcal100:266},
+  {name:'Колбаса варёная', kcal100:257},
+  {name:'Яичница', kcal100:196},
+  {name:'Омлет', kcal100:184},
+  {name:'Яйцо варёное', kcal100:155},
+  {name:'Творог 5%', kcal100:121},
+  {name:'Творог обезжиренный', kcal100:71},
+  {name:'Йогурт натуральный', kcal100:66},
+  {name:'Кефир', kcal100:52},
+  {name:'Молоко', kcal100:60},
+  {name:'Сыр твёрдый', kcal100:363},
+  {name:'Хлеб белый', kcal100:265},
+  {name:'Хлеб чёрный', kcal100:214},
+  {name:'Овсянка на воде', kcal100:88},
+  {name:'Овсянка на молоке', kcal100:120},
+  {name:'Манная каша', kcal100:98},
+  {name:'Творожная запеканка', kcal100:170},
+  {name:'Блины', kcal100:233},
+  {name:'Пельмени варёные', kcal100:220},
+  {name:'Вареники с картошкой', kcal100:170},
+  {name:'Плов', kcal100:190},
+  {name:'Борщ', kcal100:49},
+  {name:'Щи', kcal100:38},
+  {name:'Суп куриный', kcal100:45},
+  {name:'Салат оливье', kcal100:190},
+  {name:'Греческий салат', kcal100:110},
+  {name:'Салат цезарь с курицей', kcal100:165},
+  {name:'Пицца', kcal100:266},
+  {name:'Шаурма', kcal100:220},
+  {name:'Бургер', kcal100:250},
+  {name:'Шашлык куриный', kcal100:180},
+  {name:'Шашлык свиной', kcal100:257},
+  {name:'Суши / роллы', kcal100:150},
+  {name:'Паста карбонара', kcal100:195},
+  {name:'Рыба жареная', kcal100:210},
+  {name:'Рыба на пару', kcal100:105},
+  {name:'Красная икра', kcal100:250},
+  {name:'Банан', kcal100:96},
+  {name:'Яблоко', kcal100:47},
+  {name:'Апельсин', kcal100:43},
+  {name:'Виноград', kcal100:65},
+  {name:'Орехи грецкие', kcal100:654},
+  {name:'Семечки', kcal100:578},
+  {name:'Шоколад молочный', kcal100:534},
+  {name:'Мороженое', kcal100:207},
+  {name:'Мёд', kcal100:304},
+  {name:'Сахар', kcal100:387},
+  {name:'Масло сливочное', kcal100:748},
+  {name:'Масло растительное', kcal100:899},
+  {name:'Кофе с молоком', kcal100:40},
+  {name:'Чай с сахаром', kcal100:30},
+  {name:'Сок апельсиновый', kcal100:45},
+  {name:'Кола', kcal100:42},
+  {name:'Пиво', kcal100:43},
+  {name:'Вино красное сухое', kcal100:68},
+];
+
+let selectedFood = null; // {name, kcal100}
+
+function normalize(s){ return s.toLowerCase().trim(); }
+
+function renderFoodSuggestions(query){
+  const box = document.getElementById('foodSuggestions');
+  const q = normalize(query);
+  if(!q){ box.style.display='none'; box.innerHTML=''; return; }
+  const matches = FOOD_DB.filter(f=> normalize(f.name).includes(q)).slice(0,6);
+  if(matches.length===0){ box.style.display='none'; box.innerHTML=''; return; }
+  box.innerHTML = matches.map(f=>`
+    <div class="food-suggestion" data-name="${f.name}" data-kcal100="${f.kcal100}"
+      style="padding:11px 13px;font-size:13.5px;display:flex;justify-content:space-between;cursor:pointer;border-bottom:1px solid var(--panel-line);">
+      <span>${f.name}</span><span style="color:var(--text-dim2);">${f.kcal100} ккал/100г</span>
+    </div>
+  `).join('');
+  box.style.display = 'block';
+  box.querySelectorAll('.food-suggestion').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      const name = el.dataset.name;
+      const kcal100 = parseFloat(el.dataset.kcal100);
+      selectedFood = { name, kcal100 };
+      document.getElementById('foodName').value = name;
+      recalcFoodKcalFromGrams();
+      box.style.display = 'none';
+    });
+  });
+}
+document.getElementById('foodName').addEventListener('input', (e)=>{
+  selectedFood = null;
+  renderFoodSuggestions(e.target.value);
+});
+document.getElementById('foodGrams').addEventListener('input', recalcFoodKcalFromGrams);
+function recalcFoodKcalFromGrams(){
+  if(!selectedFood) return;
+  const grams = parseFloat(document.getElementById('foodGrams').value) || 0;
+  document.getElementById('foodKcal').value = Math.round(selectedFood.kcal100 * grams / 100);
+}
+
+function updateKcalUI(){
+  const goal = state.profile ? state.profile.kcalGoal : 2000;
+  const entries = state.food[TODAY] || [];
+  const consumed = entries.reduce((s,e)=>s+e.kcal,0);
+  document.getElementById('kcalGoalLabel').textContent = goal;
+  document.getElementById('kcalNum').textContent = consumed;
+  const pct = Math.max(0, Math.min(1, consumed/goal));
+  const c = 402;
+  document.getElementById('kcalRing').style.strokeDashoffset = c - pct*c;
+  renderOverview();
+
+  const list = document.getElementById('foodList');
+  const empty = document.getElementById('foodEmpty');
+  list.innerHTML = '';
+  empty.style.display = entries.length ? 'none' : 'block';
+  entries.forEach(e=>{
+    const row = document.createElement('div');
+    row.className = 'food-item';
+    row.innerHTML = `<span class="food-name">${e.name}</span><span style="display:flex;align-items:center;"><span class="food-kcal">${e.kcal} ккал</span><button class="food-del" data-id="${e.id}">✕</button></span>`;
+    list.appendChild(row);
+  });
+  list.querySelectorAll('.food-del').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      state.food[TODAY] = (state.food[TODAY]||[]).filter(e=>e.id!==btn.dataset.id);
+      await saveState();
+      updateKcalUI();
+    });
+  });
+}
+document.getElementById('addFoodBtn').addEventListener('click', async ()=>{
+  const name = document.getElementById('foodName').value.trim();
+  const kcal = parseInt(document.getElementById('foodKcal').value);
+  if(!name || !kcal) return;
+  if(!state.food[TODAY]) state.food[TODAY] = [];
+  state.food[TODAY].push({id:uid(), name, kcal});
+  await saveState();
+  document.getElementById('foodName').value='';
+  document.getElementById('foodKcal').value='';
+  document.getElementById('foodGrams').value='200';
+  selectedFood = null;
+  document.getElementById('foodSuggestions').style.display='none';
+  updateKcalUI();
+});
+
+// ---------- Profile ----------
+const GOAL_LABELS = {lose:'Похудение', maintain:'Поддержание', gain:'Набор массы'};
+function renderProfile(){
+  const p = state.profile;
+  if(!p) return;
+  document.getElementById('pfGender').textContent = p.gender==='m' ? 'Мужской' : 'Женский';
+  document.getElementById('pfAge').textContent = p.age + ' лет';
+  document.getElementById('pfHeight').textContent = p.height + ' см';
+  document.getElementById('pfWeight').textContent = p.weight + ' кг';
+  document.getElementById('pfGoal').textContent = GOAL_LABELS[p.goal] || '—';
+  document.getElementById('pfKcal').textContent = p.kcalGoal + ' ккал/день';
+  document.getElementById('pfWater').textContent = p.waterGoal + ' мл/день';
+
+  const ex = p.exercise || calcExerciseTargets(p);
+  document.getElementById('pfPushups').textContent = ex.pushups + ' раз';
+  document.getElementById('pfPullups').textContent = ex.pullups + ' раз';
+  document.getElementById('pfSquats').textContent = ex.squats + ' раз';
+  document.getElementById('pfAbs').textContent = ex.abs + ' раз';
+
+  if(isOwner()){
+    document.getElementById('ownerStatsBlock').style.display = 'block';
+    fetchRegisteredCount().then(count=>{
+      document.getElementById('ownerUserCount').textContent = count!==null ? count : '—';
+    });
+  }
+}
+document.getElementById('addExerciseHabitsBtn').addEventListener('click', async ()=>{
+  const p = state.profile;
+  if(!p) return;
+  const ex = p.exercise || calcExerciseTargets(p);
+  const toAdd = [
+    { name: `Отжимания — ${ex.pushups} раз` },
+    { name: `Подтягивания — ${ex.pullups} раз` },
+    { name: `Приседания — ${ex.squats} раз` },
+    { name: `Пресс — ${ex.abs} раз` },
+  ];
+  toAdd.forEach(h => state.habits.push({ id: uid(), name: h.name }));
+  await saveState();
+  renderHabits();
+  const btn = document.getElementById('addExerciseHabitsBtn');
+  const original = btn.textContent;
+  btn.textContent = 'Добавлено ✓';
+  setTimeout(()=> btn.textContent = original, 2000);
+});
+document.getElementById('recalcBtn').addEventListener('click', ()=>{
+  document.getElementById('onboarding').style.display = 'block';
+  document.getElementById('obStep1').classList.add('active');
+  document.getElementById('obStep2').classList.remove('active');
+});
+
+// ---------- Init ----------
+(async function init(){
+  state = await loadState();
+  if(state.profile){
+    document.getElementById('onboarding').style.display = 'none';
+    document.getElementById('obAge').value = state.profile.age;
+    document.getElementById('obHeight').value = state.profile.height;
+    document.getElementById('obWeight').value = state.profile.weight;
+  }
+  renderHabits();
+  updateWaterUI();
+  updateKcalUI();
+  renderProfile();
+})();
+</script>
+</body>
+</html>
